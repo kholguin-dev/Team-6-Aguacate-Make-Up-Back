@@ -3,7 +3,6 @@ plugins {
 	id 'org.springframework.boot' version '4.1.2'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
-
 group = 'com.aguacatemakeup'
 version = '0.0.1-SNAPSHOT'
 
@@ -12,22 +11,36 @@ java {
 		languageVersion = JavaLanguageVersion.of(21)
 	}
 }
-
 repositories {
 	mavenCentral()
 }
-
 dependencies {
+	/*Base de datos*/
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
-	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'com.mysql:mysql-connector-j'
+
+	/*API Rest*/
+	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+
+	/*Seguridad y autenticación */
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	/*Generacion y validación de tokens JWT */
+	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+
+	/*Lombok*/
+	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
+
+	/*Pruebas*/
+
 	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
 	testCompileOnly 'org.projectlombok:lombok'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testAnnotationProcessor 'org.projectlombok:lombok'
+
 }
 
 tasks.named('test') {
