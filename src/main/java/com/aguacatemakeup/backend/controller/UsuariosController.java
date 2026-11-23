@@ -4,6 +4,9 @@ package com.aguacatemakeup.backend.controller;
 import com.aguacatemakeup.backend.entity.Usuarios;
 import com.aguacatemakeup.backend.service.UsuariosService;
 
+import com.aguacatemakeup.backend.dto.RegistroUsuarioDTO;
+import com.aguacatemakeup.backend.dto.UsuarioRespuestaDTO;
+
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
@@ -12,6 +15,7 @@ import org.springframework.data.web.PageableDefault;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
 
 @RestController
 @RequestMapping("/api/usuarios")
@@ -53,15 +57,16 @@ public class UsuariosController {
 
     // 4. Registrar un usuario.
     @PostMapping
-    public ResponseEntity<Usuarios> guardarUsuario(
-            @RequestBody Usuarios usuario) {
+    public ResponseEntity<UsuarioRespuestaDTO> registrarUsuario(
+            @RequestBody RegistroUsuarioDTO datos) {
 
-        Usuarios nuevoUsuario =
-                usuariosService.guardarUsuario(usuario);
+        UsuarioRespuestaDTO usuarioRegistrado =
+                usuariosService.registrarUsuario(datos);
 
-        return ResponseEntity.status(201).body(nuevoUsuario);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(usuarioRegistrado);
     }
-
     // 5. Actualizar los datos de un usuario.
     @PutMapping("/{id}")
     public ResponseEntity<Usuarios> actualizarUsuario(
