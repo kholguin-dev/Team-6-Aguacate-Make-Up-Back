@@ -1,6 +1,7 @@
 
 package com.aguacatemakeup.backend.service;
 
+import com.aguacatemakeup.backend.dto.CrearProductoDTO;
 import com.aguacatemakeup.backend.entity.Producto;
 import com.aguacatemakeup.backend.entity.Subcategoria;
 import com.aguacatemakeup.backend.entity.EstadoProducto;
@@ -11,6 +12,7 @@ import com.aguacatemakeup.backend.repository.DetalleCarritoRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -47,6 +49,7 @@ public class ProductoService {
         return productoRepository.findByEstadoAndActivoTrue(
                 EstadoProducto.Publicado);
     }
+
     // 4. Obtener productos por subcategoría
     public List<Producto> obtenerProductosPorSubcategoria(
             Long idSubcategoria) {
@@ -57,25 +60,105 @@ public class ProductoService {
 
     // 5. Registrar un producto
     @Transactional
-    public Producto guardarProducto(Producto producto) {
+    public Producto guardarProducto(CrearProductoDTO productoDTO) {
+
+        // Convertir el DTO en una entidad Producto.
+        Producto producto = convertirDTOaProducto(productoDTO);
 
         validarProducto(producto);
+
         if (productoRepository.existsByCodigoProducto(
                 producto.getCodigoProducto())) {
+
             throw new RuntimeException(
                     "El código del producto ya está registrado");
         }
+
         if (productoRepository.existsBySku(producto.getSku())) {
+
             throw new RuntimeException(
                     "El SKU ya está registrado");
         }
+
         if (producto.getEstado() == null) {
             producto.setEstado(EstadoProducto.Borrador);
         }
+
         if (producto.getActivo() == null) {
             producto.setActivo(true);
         }
+
         return productoRepository.save(producto);
+    }
+
+    // Convertir los datos del DTO en una entidad Producto.
+    private Producto convertirDTOaProducto(CrearProductoDTO productoDTO) {
+
+        Producto producto = new Producto();
+
+        // Identificación del producto.
+        producto.setCodigoProducto(productoDTO.getId());
+        producto.setSku(productoDTO.getSku());
+
+        // Información descriptiva.
+        producto.setNombre(productoDTO.getNombre());
+        producto.setMarca(productoDTO.getMarca());
+        producto.setDescripcion(productoDTO.getDescripcion());
+
+        // Buscar la subcategoría correspondiente en la base de datos.
+        Subcategoria subcategoria =
+                subcategoriaRepository
+                        .findByNombreAndCategoria_Nombre(
+                                productoDTO.getSubcategoria(),
+                                productoDTO.getCategoria())
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "La subcategoría indicada no existe"));
+
+        producto.setSubcategoria(subcategoria);
+
+        // Precios.
+        producto.setPrecioBase(
+                productoDTO.getPrecio() != null
+                        ? BigDecimal.valueOf(productoDTO.getPrecio())
+                        : null
+        );
+
+        producto.setPrecioPromocional(
+                productoDTO.getPreciopromocional() != null
+                        ? BigDecimal.valueOf(
+                        productoDTO.getPreciopromocional())
+                        : null
+        );
+
+        // Stock y tamaño.
+        producto.setStock(productoDTO.getStock());
+        producto.setTamano(productoDTO.getTamano());
+
+        // Estado del producto.
+        producto.setEstado(
+                productoDTO.getEstado() != null
+                        ? EstadoProducto.valueOf(
+                        productoDTO.getEstado())
+                        : EstadoProducto.Borrador
+        );
+
+        // Indicadores del producto.
+        producto.setDestacado(
+                productoDTO.getDestacado() != null
+                        ? productoDTO.getDestacado()
+                        : false
+        );
+
+        producto.setNovedades(
+                productoDTO.getNovedades() != null
+                        ? productoDTO.getNovedades()
+                        : false
+        );
+
+        producto.setActivo(true);
+
+        return producto;
     }
 
     // 6. Actualizar un producto
@@ -191,7 +274,5 @@ public class ProductoService {
             throw new RuntimeException(
                     "El precio promocional no puede ser negativo ni superar el precio base");
         }
-
-
     }
 }

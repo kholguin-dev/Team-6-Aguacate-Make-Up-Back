@@ -43,53 +43,97 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // 1. Obtener el encabezado Authorization de la petición HTTP.
         String encabezado = request.getHeader("Authorization");
+
         // 2. Comprobar que exista el encabezado y que utilice Bearer.
         if (encabezado == null || !encabezado.startsWith("Bearer ")) {
-   // Si no hay token, continúa la cadena de filtros Spring Security decidirá si la ruta permite acceso anónimo.
+
+            // Si no hay token, continúa la cadena de filtros.
+            // Spring Security decidirá si la ruta permite acceso anónimo.
             filterChain.doFilter(request, response);
             return;
         }
+
         // 3. Extraer el JWT eliminando el prefijo "Bearer".
         String token = encabezado.substring(7);
-        try { // 4. Extraer el correo del usuario desde el JWT.
+
+        try {
+
+            // 4. Extraer el correo del usuario desde el JWT.
             String correo = jwtService.extraerCorreo(token);
+
             // 5. Evitar autenticar nuevamente si ya existe autenticación.
             if (correo != null &&
                     SecurityContextHolder.getContext().getAuthentication() == null) {
+
                 // 6. Buscar al usuario en la base de datos mediante su correo.
                 Usuarios usuario = usuariosRepository.findByCorreo(correo)
                         .orElse(null);
-                // 7. Comprobar que el usuario exista y que el token sea válido.
-                if (usuario != null &&
-                        jwtService.esTokenValido(token, usuario)) {
-                    // 8. Obtener el rol del usuario.
-                    String rol = usuario.getRol().getNombre();
-                    // 9. Convertir el rol en una autoridad de Spring Security.
-                    SimpleGrantedAuthority autoridad =
-                            new SimpleGrantedAuthority("ROLE_" + rol.toUpperCase());
-                    // 10. Crear el objeto que representa al usuario autenticado.
-                    UsernamePasswordAuthenticationToken autenticacion =
-                            new UsernamePasswordAuthenticationToken(
-                                    usuario.getCorreo(),
-                                    null,
-                                    List.of(autoridad)
-                            );
 
-                    // 11. Agregar detalles de la petición HTTP.
-                    autenticacion.setDetails(
-                            new WebAuthenticationDetailsSource()
-                                    .buildDetails(request)
-                    );
-                    // 12. Registrar la autenticación en el contexto de seguridad.
-                    SecurityContextHolder.getContext()
-                            .setAuthentication(autenticacion);
+                // Verificar si el usuario existe.
+                if (usuario == null) {
+
+                    System.out.println("JWT: Usuario no encontrado.");
+
+                } else {
+
+                    // 7. Comprobar que el token sea válido para ese usuario.
+                    boolean tokenValido =
+                            jwtService.esTokenValido(token, usuario);
+
+                    System.out.println("JWT: Usuario encontrado.");
+                    System.out.println("JWT: Token válido = " + tokenValido);
+
+                    // Si el token es válido, continuamos con la autenticación.
+                    if (tokenValido) {
+
+                        // 8. Obtener el rol del usuario.
+                        String rol = usuario.getRol().getNombre();
+
+                        // 9. Convertir el rol en una autoridad de Spring Security.
+                        // Spring Security utiliza el prefijo ROLE_ para los roles.
+                        SimpleGrantedAuthority autoridad =
+                                new SimpleGrantedAuthority(
+                                        "ROLE_" + rol.trim().toUpperCase()
+                                );
+
+                        // Logs temporales para depurar el error 403.
+                        System.out.println("JWT: Rol = " + rol);
+                        System.out.println("JWT: Autoridad = " + autoridad);
+
+                        // 10. Crear el objeto que representa al usuario autenticado.
+                        UsernamePasswordAuthenticationToken autenticacion =
+                                new UsernamePasswordAuthenticationToken(
+                                        usuario.getCorreo(),
+                                        null,
+                                        List.of(autoridad)
+                                );
+
+                        // 11. Agregar detalles de la petición HTTP.
+                        autenticacion.setDetails(
+                                new WebAuthenticationDetailsSource()
+                                        .buildDetails(request)
+                        );
+
+                        // 12. Registrar la autenticación en el contexto de seguridad.
+                        SecurityContextHolder.getContext()
+                                .setAuthentication(autenticacion);
+
+                        System.out.println(
+                                "JWT: Autenticación establecida correctamente."
+                        );
+
+                    }
                 }
             }
+
         } catch (JwtException | IllegalArgumentException e) {
+
             // Si el JWT es inválido, no autenticamos al usuario.
             // Las rutas protegidas serán rechazadas por Spring Security.
             SecurityContextHolder.clearContext();
+
         }
+
         // 13. Continuar con los siguientes filtros de Spring Security.
         filterChain.doFilter(request, response);
     }

@@ -1,6 +1,7 @@
 
 package com.aguacatemakeup.backend.controller;
 
+import com.aguacatemakeup.backend.dto.CrearProductoDTO;
 import com.aguacatemakeup.backend.entity.Producto;
 import com.aguacatemakeup.backend.service.ProductoService;
 import lombok.RequiredArgsConstructor;
@@ -54,12 +55,13 @@ public class ProductoController {
     // Crear un producto.
     @PostMapping
     public ResponseEntity<Producto> guardarProducto(
-            @RequestBody Producto producto) {
-
+            @RequestBody CrearProductoDTO productoDTO) {
+    System.out.println(productoDTO);
         Producto nuevoProducto =
-                productoService.guardarProducto(producto);
+                productoService.guardarProducto(productoDTO);
 
         return ResponseEntity.status(201).body(nuevoProducto);
+
     }
 
     // Actualizar un producto.
